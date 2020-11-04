@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ProductApi.Data;
 using ProductApi.Models;
+using ProductApi.Services;
 
 namespace ProductApi.Controllers
 {
@@ -13,10 +14,10 @@ namespace ProductApi.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private ProductsDbContext context;
-        public ProductsController(ProductsDbContext productsDbContext)
+        private IProduct productRepository;
+        public ProductsController(IProduct productRepository)
         {
-            context = productsDbContext;
+            this.productRepository = productRepository;
         }
         //static List<Product> products = new List<Product>()
         //{
@@ -30,13 +31,13 @@ namespace ProductApi.Controllers
             switch (sortPrice)
             {
                 case "desc":
-                    products = context.Products.OrderByDescending(p => p.Price);
+                    products = productRepository.GetProducts().AsQueryable().OrderByDescending(p => p.Price);
                     break;
                 case "asc":
-                    products = context.Products.OrderBy(p => p.Price);
+                    products = productRepository.GetProducts().AsQueryable().OrderBy(p => p.Price);
                     break;
                 default:
-                    products = context.Products;
+                    products = productRepository.GetProducts().AsQueryable();
                     break;
             }
             return products;
@@ -45,7 +46,7 @@ namespace ProductApi.Controllers
         [HttpGet("{id}", Name ="Get")]
         public IActionResult Get(int id)
         {
-            var product = context.Products.SingleOrDefault(p => p.ProductId == id);
+            var product = productRepository.GetProduct(id);
             if (product == null)
                 return NotFound("No record found...");
 
@@ -65,8 +66,7 @@ namespace ProductApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            context.Products.Add(product);
-            context.SaveChanges(true);
+            productRepository.AddProduct(product);
             return StatusCode(StatusCodes.Status201Created);
         }
 
@@ -80,8 +80,7 @@ namespace ProductApi.Controllers
                 return BadRequest();
             try
             {
-                context.Products.Update(product);
-                context.SaveChanges(true);
+                productRepository.UpdateProduct(product);
             }
             catch (Exception e)
             {
@@ -94,12 +93,7 @@ namespace ProductApi.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var product = context.Products.SingleOrDefault(p => p.ProductId == id);
-            if (product == null)
-                return NotFound("No record found...");
-
-            context.Products.Remove(product);
-            context.SaveChanges(true);
+            productRepository.DeleteProduct(id);
             return Ok("Product deleted...");
         }
     }

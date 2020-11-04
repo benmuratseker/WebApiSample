@@ -6,7 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ProductApi.Data;
-using IHostingEnvironment = Microsoft.Extensions.Hosting.IHostingEnvironment;
+using ProductApi.Services;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace ProductApi
 {
@@ -26,7 +27,18 @@ namespace ProductApi
 
             services.AddApiVersioning();
             //services.AddApiVersioning(v => v.ApiVersionReader = new MediaTypeApiVersionReader());//accept -> application/json;v=2.0 etc
+
+            services.AddScoped<IProduct, ProductRepository>();
+            
             services.AddControllers();
+            services.AddSwaggerGen(s => {
+                s.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+                {
+                    Title = "Product API",
+                    Version = "v1"
+                });
+
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +60,13 @@ namespace ProductApi
                 endpoints.MapControllers();
             });
             //app.UseMvc();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(s =>
+            {
+                s.SwaggerEndpoint("/swagger/v1/swagger.json", "API for product");
+            });
+
             productsDbContext.Database.EnsureCreated();
         }
     }
